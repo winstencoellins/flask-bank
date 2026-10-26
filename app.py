@@ -20,6 +20,10 @@ app = Flask(__name__)
 # In a real app this would be a long random string kept private.
 app.secret_key = "beginner-banking-app-secret-key"
 
+# Always reload HTML after a deposit/withdrawal so the new balance shows up.
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
+
 # -----------------------------------------------------------------------------
 # File paths
 # -----------------------------------------------------------------------------
@@ -92,13 +96,28 @@ def read_instructions_text():
     return "Instructions file was not found."
 
 
+def clean_row(row):
+    """Strip extra spaces from CSV keys and values so ids match reliably."""
+    cleaned = {}
+    for key in row:
+        if key is None:
+            continue
+        value = row[key]
+        if value is None:
+            value = ""
+        cleaned[key.strip()] = str(value).strip()
+    return cleaned
+
+
 def read_users():
     """Read every user from users.csv and return a list of dictionaries."""
     users = []
     with open(USERS_FILE, "r", newline="") as file:
         reader = csv.DictReader(file)
         for row in reader:
-            users.append(row)
+            cleaned = clean_row(row)
+            if cleaned.get("id", "") != "":
+                users.append(cleaned)
     return users
 
 
@@ -139,6 +158,8 @@ def get_next_id(rows):
 
     highest = 0
     for row in rows:
+        if row.get("id", "") == "":
+            continue
         row_id = int(row["id"])
         if row_id > highest:
             highest = row_id
@@ -148,11 +169,14 @@ def get_next_id(rows):
 def update_user_balance(user_id, new_balance):
     """Change one user's balance in users.csv and save the file."""
     users = read_users()
+    updated = False
     for user in users:
         if user["id"] == str(user_id):
             # Store money with 2 decimal places, e.g. 10.50
             user["balance"] = "{:.2f}".format(new_balance)
+            updated = True
     save_users(users)
+    return updated
 
 
 def read_all_transactions():
@@ -161,8 +185,22 @@ def read_all_transactions():
     with open(TRANSACTIONS_FILE, "r", newline="") as file:
         reader = csv.DictReader(file)
         for row in reader:
-            transactions.append(row)
+            cleaned = clean_row(row)
+            if cleaned.get("id", "") != "":
+                transactions.append(cleaned)
     return transactions
+
+
+def save_transactions(transactions):
+    """Write the full list of transactions back to transactions.csv."""
+    with open(TRANSACTIONS_FILE, "w", newline="") as file:
+        writer = csv.DictWriter(
+            file,
+            fieldnames=["id", "user_id", "type", "amount", "balance_after", "timestamp"]
+        )
+        writer.writeheader()
+        for row in transactions:
+            writer.writerow(row)
 
 
 def read_transactions_for_user(user_id):
@@ -187,21 +225,15 @@ def add_transaction(user_id, transaction_type, amount, balance_after):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     new_row = {
-        "id": new_id,
-        "user_id": user_id,
+        "id": str(new_id),
+        "user_id": str(user_id),
         "type": transaction_type,
         "amount": "{:.2f}".format(amount),
         "balance_after": "{:.2f}".format(balance_after),
         "timestamp": timestamp
     }
-
-    with open(TRANSACTIONS_FILE, "a", newline="") as file:
-        writer = csv.DictWriter(
-            file,
-            fieldnames=["id", "user_id", "type", "amount", "balance_after", "timestamp"]
-        )
-        # If the file only has a header (no data yet), DictWriter still just writes a row.
-        writer.writerow(new_row)
+    transactions.append(new_row)
+    save_transactions(transactions)
 
 
 def parse_amount(raw_value):
@@ -221,9 +253,31 @@ def parse_amount(raw_value):
     return round(amount, 2)
 
 
+def redirect_after_post(endpoint, **values):
+    """
+    After a form is submitted, send the browser to a GET page.
+    Code 303 means "always use GET next", so the new balance is loaded.
+    """
+    return redirect(url_for(endpoint, **values), code=303)
+
+
 # =============================================================================
 # Flask routes (the pages and form actions)
 # =============================================================================
+
+@app.before_request
+def prepare_data_files():
+    """Make sure the CSV files exist before every page load."""
+    ensure_csv_files_exist()
+
+
+@app.after_request
+def stop_browser_from_caching(response):
+    """Stop the browser from showing an old balance after a deposit."""
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 @app.route("/")
 def dashboard():
@@ -243,13 +297,13 @@ def add_user():
     # Username and password cannot be empty.
     if username == "" or password == "":
         flash("Username and password are required.", "error")
-        return redirect(url_for("dashboard"))
+        return redirect_after_post("dashboard")
 
     # Do not allow two users to have the same username.
     existing_user = find_user_by_username(username)
     if existing_user is not None:
         flash("That username already exists. Please choose another.", "error")
-        return redirect(url_for("dashboard"))
+        return redirect_after_post("dashboard")
 
     # Starting balance is optional; if left blank we use 0.
     if starting_balance_text == "":
@@ -259,11 +313,11 @@ def add_user():
         starting_balance = float(starting_balance_text)
     except ValueError:
         flash("Starting balance must be a number.", "error")
-        return redirect(url_for("dashboard"))
+        return redirect_after_post("dashboard")
 
     if starting_balance < 0:
         flash("Starting balance cannot be negative.", "error")
-        return redirect(url_for("dashboard"))
+        return redirect_after_post("dashboard")
 
     starting_balance = round(starting_balance, 2)
 
@@ -278,7 +332,7 @@ def add_user():
     save_users(users)
 
     flash("User '" + username + "' was added successfully.", "success")
-    return redirect(url_for("dashboard"))
+    return redirect_after_post("dashboard")
 
 
 @app.route("/user/<user_id>")
@@ -287,7 +341,7 @@ def user_detail(user_id):
     user = find_user_by_id(user_id)
     if user is None:
         flash("User not found.", "error")
-        return redirect(url_for("dashboard"))
+        return redirect_after_post("dashboard")
 
     transactions = read_transactions_for_user(user_id)
     return render_template("user_detail.html", user=user, transactions=transactions)
@@ -299,21 +353,25 @@ def deposit(user_id):
     user = find_user_by_id(user_id)
     if user is None:
         flash("User not found.", "error")
-        return redirect(url_for("dashboard"))
+        return redirect_after_post("dashboard")
 
     amount = parse_amount(request.form.get("amount"))
     if amount is None:
         flash("Please enter a positive number for the deposit amount.", "error")
-        return redirect(url_for("user_detail", user_id=user_id))
+        return redirect_after_post("user_detail", user_id=user_id)
 
     current_balance = float(user["balance"])
     new_balance = round(current_balance + amount, 2)
 
-    update_user_balance(user_id, new_balance)
+    updated = update_user_balance(user_id, new_balance)
+    if not updated:
+        flash("Could not update this user's balance.", "error")
+        return redirect_after_post("user_detail", user_id=user_id)
+
     add_transaction(user_id, "deposit", amount, new_balance)
 
     flash("Deposited $" + "{:.2f}".format(amount) + " successfully.", "success")
-    return redirect(url_for("user_detail", user_id=user_id))
+    return redirect_after_post("user_detail", user_id=user_id)
 
 
 @app.route("/user/<user_id>/withdraw", methods=["POST"])
@@ -322,27 +380,31 @@ def withdraw(user_id):
     user = find_user_by_id(user_id)
     if user is None:
         flash("User not found.", "error")
-        return redirect(url_for("dashboard"))
+        return redirect_after_post("dashboard")
 
     amount = parse_amount(request.form.get("amount"))
     if amount is None:
         flash("Please enter a positive number for the withdrawal amount.", "error")
-        return redirect(url_for("user_detail", user_id=user_id))
+        return redirect_after_post("user_detail", user_id=user_id)
 
     current_balance = float(user["balance"])
 
     # A user cannot withdraw more money than they currently have.
     if amount > current_balance:
         flash("Withdrawal failed: amount is greater than the current balance.", "error")
-        return redirect(url_for("user_detail", user_id=user_id))
+        return redirect_after_post("user_detail", user_id=user_id)
 
     new_balance = round(current_balance - amount, 2)
 
-    update_user_balance(user_id, new_balance)
+    updated = update_user_balance(user_id, new_balance)
+    if not updated:
+        flash("Could not update this user's balance.", "error")
+        return redirect_after_post("user_detail", user_id=user_id)
+
     add_transaction(user_id, "withdrawal", amount, new_balance)
 
     flash("Withdrew $" + "{:.2f}".format(amount) + " successfully.", "success")
-    return redirect(url_for("user_detail", user_id=user_id))
+    return redirect_after_post("user_detail", user_id=user_id)
 
 
 @app.route("/instructions")
@@ -356,7 +418,7 @@ def instructions():
 # Start the app
 # =============================================================================
 
-# Make sure the CSV files exist before the first request.
+# Make sure the CSV files exist when the app starts.
 ensure_csv_files_exist()
 
 if __name__ == "__main__":
