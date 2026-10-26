@@ -1,0 +1,335 @@
+/* ============================================================
+   Simple Bank UI
+   Inspired by modern banking apps: white cards, pill buttons,
+   and list rows. Colors are at the top so beginners can change them.
+   ============================================================ */
+
+:root {
+    --blue: #0f4c81;      /* dark blue accent */
+    --blue-hover: #0c3d68;
+    --page: #f3f4f6;      /* soft gray page, like the sample UI */
+    --white: #ffffff;
+    --row: #f6f7f9;       /* light gray inside cards */
+    --text: #111827;
+    --muted: #6b7280;
+    --line: #eceff3;
+    --green: #16a34a;
+    --red: #dc2626;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+    background: var(--page);
+    color: var(--text);
+    line-height: 1.5;
+}
+
+/* Center the whole app. */
+.page {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+}
+
+/* ---------- Top bar ---------- */
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Circle logo — no image file needed. */
+.logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: var(--white);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+h1 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+h2 {
+    margin: 0 0 12px;
+    font-size: 1.1rem;
+}
+
+.muted {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.label {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+/* ---------- Cards (white, very round) ---------- */
+
+.card {
+    background: var(--white);
+    border-radius: 24px;
+    padding: 22px;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 24px rgba(17, 24, 39, 0.04);
+}
+
+.card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.card-top h2 {
+    margin: 0;
+}
+
+/* Large number, like the $150.00 card in the sample. */
+.hero .big-number {
+    margin: 4px 0 6px;
+    font-size: 2.6rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+/* Two cards side by side on wide screens. */
+.two-cols {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.two-cols .card {
+    flex: 1;
+    min-width: 240px;
+}
+
+/* ---------- Forms ---------- */
+
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.form-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.form-stack h2,
+.form-stack .muted {
+    margin: 0;
+}
+
+.form-stack .btn {
+    width: 100%;
+}
+
+label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    flex: 1;
+    min-width: 150px;
+}
+
+/* Soft, pill-shaped inputs. */
+input[type="text"],
+input[type="number"] {
+    padding: 12px 16px;
+    border: none;
+    border-radius: 999px;
+    background: var(--row);
+    font-size: 1rem;
+    color: var(--text);
+    width: 100%;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus {
+    outline: 2px solid var(--blue);
+}
+
+/* ---------- List rows (users and transactions) ---------- */
+
+.list-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    background: var(--row);
+    border-radius: 18px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+}
+
+.list-main {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Circle with the first letter of the username. */
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: var(--white);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Small colored circle for deposit / withdrawal. */
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.dot.type-deposit {
+    background: var(--green);
+}
+
+.dot.type-withdrawal {
+    background: var(--red);
+}
+
+.password-cell {
+    color: var(--muted);
+    min-width: 72px;
+}
+
+.money {
+    font-weight: 700;
+    min-width: 90px;
+    text-align: right;
+}
+
+.type-deposit {
+    color: var(--green);
+    text-transform: capitalize;
+}
+
+.type-withdrawal {
+    color: var(--red);
+    text-transform: capitalize;
+}
+
+/* ---------- Buttons (pill shape) ---------- */
+
+.btn {
+    display: inline-block;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    text-align: center;
+    cursor: pointer;
+}
+
+.btn-primary,
+.btn-small {
+    background: var(--blue);
+    color: var(--white);
+}
+
+.btn-small {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+}
+
+.btn-ghost {
+    background: var(--white);
+    color: var(--text);
+    border: 1px solid var(--line);
+}
+
+.btn-deposit {
+    background: var(--green);
+    color: var(--white);
+}
+
+.btn-withdraw {
+    background: var(--red);
+    color: var(--white);
+}
+
+.btn-primary:hover,
+.btn-small:hover {
+    background: var(--blue-hover);
+}
+
+.btn-ghost:hover {
+    background: var(--row);
+}
+
+/* ---------- Flash messages ---------- */
+
+.flash {
+    padding: 12px 16px;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+
+.flash.success {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.flash.error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* Lab instructions page — keep markdown line breaks. */
+.instructions-text {
+    margin: 16px 0 0;
+    padding: 16px;
+    background: var(--row);
+    border-radius: 16px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    overflow-x: auto;
+}

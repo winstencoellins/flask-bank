@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Instructions - Simple Bank{% endblock %}
+
+{% block content %}
+<p>
+    <a class="btn btn-ghost" href="{{ url_for('dashboard') }}">&larr; Back</a>
+</p>
+
+<section class="card">
+    <h2>Lab instructions</h2>
+    <p class="muted">This is the same text as INSTRUCTIONS.md. Students should build their own app from these notes.</p>
+    <!-- white-space: pre-wrap keeps the markdown line breaks readable. -->
+    <pre class="instructions-text">{{ text }}</pre>
+</section>
+{% endblock %}

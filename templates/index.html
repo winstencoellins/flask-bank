@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Simple Bank{% endblock %}
+
+{% block content %}
+<!-- Big number card, like the money cards in the sample UI -->
+<section class="card hero">
+    <p class="label">Total users</p>
+    <p class="big-number">{{ total_users }}</p>
+    <p class="muted">All bank users in one place</p>
+</section>
+
+<section class="card">
+    <h2>Add a new user</h2>
+    <form action="{{ url_for('add_user') }}" method="post" class="form-row">
+        <label>
+            Username
+            <input type="text" name="username" required placeholder="e.g. dana">
+        </label>
+        <label>
+            Password
+            <input type="text" name="password" required placeholder="choose a password">
+        </label>
+        <label>
+            Starting balance
+            <input type="number" name="balance" value="0" step="0.01" min="0">
+        </label>
+        <button type="submit" class="btn btn-primary">Add user</button>
+    </form>
+</section>
+
+<section class="card">
+    <div class="card-top">
+        <h2>All users</h2>
+        <button type="button" id="toggle-passwords" class="btn btn-ghost" onclick="togglePasswords()">
+            Show passwords
+        </button>
+    </div>
+
+    {% if users %}
+        <!-- Each user is one rounded row. Easier to style than a heavy table. -->
+        {% for user in users %}
+        <div class="list-row">
+            <span class="avatar">{{ user.username[0]|upper }}</span>
+            <div class="list-main">
+                <strong>{{ user.username }}</strong>
+                <span class="muted">ID {{ user.id }}</span>
+            </div>
+            <span class="password-cell" data-password="{{ user.password }}" data-hidden="true">••••••</span>
+            <span class="money">${{ "%.2f"|format(user.balance|float) }}</span>
+            <a class="btn btn-small" href="{{ url_for('user_detail', user_id=user.id) }}">View</a>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="muted">No users yet. Add one using the form above.</p>
+    {% endif %}
+</section>
+{% endblock %}

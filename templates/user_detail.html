@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.username }} - Simple Bank{% endblock %}
+
+{% block content %}
+<p>
+    <a class="btn btn-ghost" href="{{ url_for('dashboard') }}">&larr; Back</a>
+</p>
+
+<!-- Hero card shows the balance in a large, easy-to-read number. -->
+<section class="card hero">
+    <p class="label">Current balance</p>
+    <p class="big-number">${{ "%.2f"|format(user.balance|float) }}</p>
+    <p class="muted">{{ user.username }} · ID {{ user.id }} · Password: {{ user.password }}</p>
+</section>
+
+<div class="two-cols">
+    <!-- Deposit form: JavaScript checks that the amount is greater than 0. -->
+    <form
+        action="{{ url_for('deposit', user_id=user.id) }}"
+        method="post"
+        class="card form-stack"
+        onsubmit="return validateAmount(this);"
+    >
+        <h2>Deposit</h2>
+        <p class="muted">Add money to this account</p>
+        <label>
+            Amount
+            <input type="number" name="amount" step="0.01" min="0.01" required placeholder="0.00">
+        </label>
+        <button type="submit" class="btn btn-deposit">Deposit</button>
+    </form>
+
+    <!-- Withdrawal form: JavaScript validates the amount, then asks for confirmation. -->
+    <form
+        action="{{ url_for('withdraw', user_id=user.id) }}"
+        method="post"
+        class="card form-stack"
+        onsubmit="return confirmWithdrawal(this);"
+    >
+        <h2>Withdraw</h2>
+        <p class="muted">Take money out of this account</p>
+        <label>
+            Amount
+            <input type="number" name="amount" step="0.01" min="0.01" required placeholder="0.00">
+        </label>
+        <button type="submit" class="btn btn-withdraw">Withdraw</button>
+    </form>
+</div>
+
+<section class="card">
+    <h2>Transaction history</h2>
+    {% if transactions %}
+        {% for tx in transactions %}
+        <div class="list-row">
+            <span class="dot type-{{ tx.type }}"></span>
+            <div class="list-main">
+                <strong class="type-{{ tx.type }}">{{ tx.type }}</strong>
+                <span class="muted">{{ tx.timestamp }}</span>
+            </div>
+            <span class="money">${{ "%.2f"|format(tx.amount|float) }}</span>
+            <span class="muted">after ${{ "%.2f"|format(tx.balance_after|float) }}</span>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="muted">No transactions yet for this user.</p>
+    {% endif %}
+</section>
+{% endblock %}
